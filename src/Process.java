@@ -1,14 +1,15 @@
 public class Process implements Comparable<Process> {
     private String processName;
-    private int size = 0;
-    private int time = 0;
-    private int interval = 0;
-    private int deadline = 0;
-    private int remainTime = 0;
-    private int turnTime = 0;
+    private int size;
+    private int time;
+    private int interval;
+    private int deadline;
+    private int remainTime;
+    private int turnTime;
     private boolean first;
+    private int memBase;
 
-    public Process(String processName, int turnTime, int size, int time, int interval, int deadline){
+    public Process(String processName, int turnTime, int size, int time, int interval, int deadline, int memBase){
         this.processName = processName;
         this.size = size;
         this.time = time;
@@ -17,6 +18,7 @@ public class Process implements Comparable<Process> {
         this.remainTime = time;
         this.turnTime = turnTime;
         this.first = true;
+        this.memBase = memBase;
     }
 
     public void printProcess(){
@@ -76,6 +78,10 @@ public class Process implements Comparable<Process> {
 
     public void setFirst(boolean first) {
         this.first = first;
+    }
+
+    public int getMemBase() {
+        return memBase;
     }
 
     @Override

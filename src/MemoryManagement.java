@@ -11,43 +11,40 @@ public class MemoryManagement {
             BufferedReader br = new BufferedReader(fr);
             int currentTime = 0;
             Queue<Process> readyQueue = new PriorityQueue<>();
-            LinkedList<String> memory = new LinkedList<>();
+            LinkedList<String> externalMemory = new LinkedList<>();
             int ramSize = Integer.parseInt(br.readLine().split(" ")[2]);
             int frameSize = Integer.parseInt(br.readLine().split(" ")[2]);
             int processNumber = Integer.parseInt(br.readLine().split(" ")[2]);
-            int[] deadlines = new int[processNumber];
+            br.readLine();
+            int baseAddress = 0;
             for (int i = 0; i < processNumber; i++) {
-                br.readLine();
-                String name = br.readLine().split(" ")[1];
-                int size = Integer.parseInt(br.readLine().split(" ")[1]);
-                int time = Integer.parseInt(br.readLine().split(" ")[1]);
-                int period = Integer.parseInt(br.readLine().split(" ")[1]);
-                deadlines[i] = Integer.parseInt(br.readLine().split(" ")[1]);
-                Process process = new Process(name, 0, size, time, period, deadlines[i]);
+                String[] processInfo = br.readLine().split(" ");
+                Process process = new Process(processInfo[0], 0, Integer.parseInt(processInfo[4]),
+                        Integer.parseInt(processInfo[1]), Integer.parseInt(processInfo[3]), Integer.parseInt(processInfo[2]), baseAddress);
+                baseAddress += process.getSize();
                 readyQueue.add(process);
-                memory.add(process.getProcessName());
+                externalMemory.add(process.getProcessName());
             }
 
             int pageNumber = ramSize/frameSize;
             LinkedList<String> ram = new LinkedList<>();
             int emptyPages = pageNumber;
-            LinkedList<LinkedList<String>>  
 
             for(int i = 0; i < pageNumber; i++) {
                 ram.add("empty");
             }
 
             //cpu
-            boolean turn = false;
             int quantumSize = 3;
+            int[][] pageTable = new int[pageNumber][2]; //pageTable[i][0] = memBase and pageTable[i][0] = pageNumber
             while (readyQueue.size() > 0){
                 int remainTime = quantumSize;
-                Process process = null;
+                Process process;
                 //ram check
                 if(ram.contains(readyQueue.peek().getProcessName()))
                     process = readyQueue.poll();
                 else{
-                    memory.remove(readyQueue.peek().getProcessName());
+                    externalMemory.remove(readyQueue.peek().getProcessName());
                     int count = 0;
                     int needPages;
                     if(readyQueue.peek().getSize() % frameSize == 0)
@@ -56,9 +53,11 @@ public class MemoryManagement {
                         needPages = Math.round(readyQueue.peek().getSize() / frameSize) + 1;
                     if(emptyPages >= needPages){
                         process = readyQueue.poll();
-                        memory.remove(process.getProcessName());
+                        externalMemory.remove(process.getProcessName());
                         for(int i = 0; i < pageNumber ; i++) {
-                            if(ram.get(i) == "empty" && count < needPages){
+                            if(ram.get(i).equals("empty") && count < needPages){
+                                pageTable[i][0] = process.getMemBase() + count * frameSize;
+                                pageTable[i][1] = process.getMemBase() + count * frameSize;
                                 ram.set(i, process.getProcessName());
                                 count++;
                                 emptyPages--;
@@ -67,12 +66,12 @@ public class MemoryManagement {
                     }
                     else{
                         process = readyQueue.poll();
-                        memory.add(ram.get(0));
-                        memory.remove(process.getProcessName());
+                        externalMemory.add(ram.get(0));
+                        externalMemory.remove(process.getProcessName());
                         while (emptyPages < needPages){
                             int index = 0;
                             for (index = 0; index < pageNumber ; index++) {
-                                if(ram.get(index) != "empty")
+                                if(!ram.get(index).equals("empty"))
                                     break;
                             }
                             for (int i = index + 1; i < pageNumber; i++) {
@@ -85,8 +84,10 @@ public class MemoryManagement {
                             emptyPages++;
                         }
                         for(int i = 0; i < pageNumber ; i++) {
-                            if(ram.get(i) == "empty" && count < needPages){
+                            if(ram.get(i).equals( "empty") && count < needPages){
                                 ram.set(i, process.getProcessName());
+                                pageTable[i][0] = process.getMemBase() + count * frameSize;
+                                pageTable[i][1] = process.getMemBase() + count * frameSize;
                                 count++;
                                 emptyPages--;
                             }
@@ -113,21 +114,26 @@ public class MemoryManagement {
                     System.out.println("ram pages are: ");
                     ram.forEach(s -> System.out.print(s + ", "));
                     //page table
-                    System.out.println();
+                    System.out.println("page table is:");
+                    System.out.println("memory base   page offset");
+                    for (int i = 0; i < pageNumber; i++) {
+                        System.out.println(pageTable[i][0] + "   "  + pageTable[i][1]);
+                    }
                     //memory
                     System.out.println("Processes that are in Memory: ");
-                    memory.forEach(s -> System.out.print(s + ", "));
+                    externalMemory.forEach(s -> System.out.print(s + ", "));
                     System.out.println("\n*****");
                 }
                 //end or stop quantum
                 process.setTurnTime(process.getInterval());
                 if(process.getRemainTime() > 0)
-                    readyQueue.add(process);;
+                    readyQueue.add(process);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     public static void updateTurnTimes(Queue<Process> processes){
         processes.forEach(process -> process.setTurnTime(Math.max(process.getTurnTime() - 1, 0)));
     }
